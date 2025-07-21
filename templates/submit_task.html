@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Task - OperatorOS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i data-feather="plus-circle" class="me-2"></i>Submit New Task
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-4">
+                        <label for="query" class="form-label">
+                            <i data-feather="edit-3" class="me-1"></i>Task Description
+                        </label>
+                        <textarea 
+                            class="form-control" 
+                            id="query" 
+                            name="query" 
+                            rows="4" 
+                            placeholder="Describe what you'd like the AI agents to help you with..."
+                            required></textarea>
+                        <div class="form-text">
+                            Be specific about what you need. The system will automatically route your task to the most appropriate specialist agent.
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="priority" class="form-label">
+                            <i data-feather="flag" class="me-1"></i>Priority Level
+                        </label>
+                        <select class="form-select" id="priority" name="priority">
+                            <option value="1">🔴 Critical (1) - Urgent, immediate attention required</option>
+                            <option value="2">🟠 High (2) - Important, should be processed soon</option>
+                            <option value="3">🟡 Medium-High (3) - Above normal priority</option>
+                            <option value="4">🟢 Medium (4) - Normal priority</option>
+                            <option value="5" selected>🔵 Standard (5) - Default priority level</option>
+                            <option value="6">⚪ Medium-Low (6) - Below normal priority</option>
+                            <option value="7">⚫ Low (7) - Can wait, process when resources available</option>
+                            <option value="8">📋 Background (8) - Lowest priority</option>
+                        </select>
+                        <div class="form-text">
+                            Higher priority tasks are processed first. Use critical priority only for urgent matters.
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i data-feather="layers" class="me-1"></i>Suggested Agent Pool
+                        </label>
+                        <div id="suggestedPool" class="alert alert-info d-none">
+                            <i data-feather="info" class="me-2"></i>
+                            <span id="poolSuggestion"></span>
+                        </div>
+                        <div class="form-text">
+                            The system will automatically analyze your task and route it to the appropriate specialist agent pool.
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i data-feather="arrow-left" class="me-1"></i>Back to Dashboard
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="send" class="me-1"></i>Submit Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Agent Pool Information -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5 class="mb-3">
+                    <i data-feather="info" class="me-2"></i>Available Agent Pools
+                </h5>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <div class="card border-danger">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <i data-feather="heart" class="text-danger me-2 fs-5"></i>
+                            <h6 class="mb-0">Healthcare AI</h6>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            Medical analysis, symptom assessment, medication guidance, insurance navigation, and wellness coaching.
+                        </p>
+                        <div class="small">
+                            <strong>Keywords:</strong> health, medical, symptoms, medication, insurance, wellness, diagnosis
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="card border-success">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <i data-feather="dollar-sign" class="text-success me-2 fs-5"></i>
+                            <h6 class="mb-0">Financial Advisor</h6>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            Investment advice, portfolio optimization, market analysis, financial planning, and banking guidance.
+                        </p>
+                        <div class="small">
+                            <strong>Keywords:</strong> investment, stock, portfolio, finance, budget, loan, retirement, tax
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="card border-info">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <i data-feather="target" class="text-info me-2 fs-5"></i>
+                            <h6 class="mb-0">Sports Analytics</h6>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            Sports predictions, betting analysis, fantasy advice, arbitrage opportunities, and statistical modeling.
+                        </p>
+                        <div class="small">
+                            <strong>Keywords:</strong> sports, betting, fantasy, odds, predictions, nfl, nba, mlb, arbitrage
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="card border-warning">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <i data-feather="briefcase" class="text-warning me-2 fs-5"></i>
+                            <h6 class="mb-0">Business Automation</h6>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            Process automation, workflow optimization, project management, strategic planning, and operations analysis.
+                        </p>
+                        <div class="small">
+                            <strong>Keywords:</strong> business, automation, workflow, process, project, management, strategy
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Analyze query and suggest agent pool
+    document.getElementById('query').addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const suggestedPoolDiv = document.getElementById('suggestedPool');
+        const poolSuggestion = document.getElementById('poolSuggestion');
+        
+        // Healthcare keywords
+        const healthKeywords = ['health', 'medical', 'medicine', 'doctor', 'hospital', 'insurance', 'medication', 'drug', 'symptom', 'diagnosis', 'treatment', 'pharmacy', 'healthcare', 'clinical', 'patient', 'prescription', 'wellness'];
+        
+        // Financial keywords
+        const financeKeywords = ['money', 'investment', 'stock', 'portfolio', 'tax', 'finance', 'budget', 'loan', 'mortgage', 'retirement', 'savings', 'debt', 'credit', 'bank', 'financial', 'wealth', 'market', 'economy'];
+        
+        // Sports keywords
+        const sportsKeywords = ['sports', 'game', 'bet', 'betting', 'odds', 'fantasy', 'nfl', 'nba', 'mlb', 'nhl', 'football', 'basketball', 'baseball', 'hockey', 'arbitrage', 'sportsbook', 'gambling'];
+        
+        // Business keywords
+        const businessKeywords = ['business', 'workflow', 'automation', 'process', 'management', 'project', 'team', 'operations', 'strategy', 'planning', 'organization', 'productivity', 'efficiency'];
+        
+        // Count keyword matches
+        const healthScore = healthKeywords.filter(keyword => query.includes(keyword)).length;
+        const financeScore = financeKeywords.filter(keyword => query.includes(keyword)).length;
+        const sportsScore = sportsKeywords.filter(keyword => query.includes(keyword)).length;
+        const businessScore = businessKeywords.filter(keyword => query.includes(keyword)).length;
+        
+        // Determine best match
+        const scores = {
+            'Healthcare AI': healthScore,
+            'Financial Advisor': financeScore,
+            'Sports Analytics': sportsScore,
+            'Business Automation': businessScore
+        };
+        
+        const bestMatch = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+        const bestScore = scores[bestMatch];
+        
+        if (bestScore > 0 && query.length > 10) {
+            let icon = '';
+            let colorClass = '';
+            
+            switch(bestMatch) {
+                case 'Healthcare AI':
+                    icon = '❤️';
+                    colorClass = 'alert-danger';
+                    break;
+                case 'Financial Advisor':
+                    icon = '💰';
+                    colorClass = 'alert-success';
+                    break;
+                case 'Sports Analytics':
+                    icon = '🎯';
+                    colorClass = 'alert-info';
+                    break;
+                case 'Business Automation':
+                    icon = '💼';
+                    colorClass = 'alert-warning';
+                    break;
+            }
+            
+            suggestedPoolDiv.className = `alert ${colorClass}`;
+            poolSuggestion.innerHTML = `${icon} Your task will likely be routed to <strong>${bestMatch}</strong> based on the content.`;
+            suggestedPoolDiv.classList.remove('d-none');
+        } else {
+            suggestedPoolDiv.classList.add('d-none');
+        }
+    });
+
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const query = document.getElementById('query').value.trim();
+        
+        if (query.length < 10) {
+            e.preventDefault();
+            alert('Please provide a more detailed description of your task (at least 10 characters).');
+            document.getElementById('query').focus();
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = document.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>Submitting...';
+    });
+</script>
+{% endblock %}

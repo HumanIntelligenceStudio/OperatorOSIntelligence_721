@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}{{ demo.title }} - OperatorOS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Demo Header -->
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    {% if demo_type == 'healthcare' %}
+                        <i data-feather="heart" class="text-danger" style="width: 64px; height: 64px;"></i>
+                    {% elif demo_type == 'financial' %}
+                        <i data-feather="dollar-sign" class="text-success" style="width: 64px; height: 64px;"></i>
+                    {% elif demo_type == 'sports' %}
+                        <i data-feather="target" class="text-info" style="width: 64px; height: 64px;"></i>
+                    {% elif demo_type == 'business' %}
+                        <i data-feather="briefcase" class="text-warning" style="width: 64px; height: 64px;"></i>
+                    {% endif %}
+                </div>
+                <h1 class="mb-3">{{ demo.title }}</h1>
+                <p class="lead text-muted">{{ demo.description }}</p>
+            </div>
+        </div>
+
+        <!-- Example Queries -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="help-circle" class="me-2"></i>Example Queries
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Try these example queries to see the {{ demo.title }} in action:</p>
+                <div class="row">
+                    {% for example in demo.examples %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-secondary h-100">
+                            <div class="card-body">
+                                <p class="card-text">{{ example }}</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="useExample('{{ example }}')">
+                                    <i data-feather="arrow-right" class="me-1"></i>Try This
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Demo -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="play" class="me-2"></i>Interactive Demo
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="demoForm">
+                    <div class="mb-3">
+                        <label for="demoQuery" class="form-label">Enter your query:</label>
+                        <textarea 
+                            class="form-control" 
+                            id="demoQuery" 
+                            rows="3" 
+                            placeholder="Ask me anything related to {{ demo_type }}..."
+                            required></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge {% if demo_type == 'healthcare' %}bg-danger{% elif demo_type == 'financial' %}bg-success{% elif demo_type == 'sports' %}bg-info{% elif demo_type == 'business' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ demo.title }}
+                            </span>
+                            <small class="text-muted ms-2">Powered by enterprise AI agents</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="send" class="me-1"></i>Submit Query
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Demo Result -->
+                <div id="demoResult" class="mt-4" style="display: none;">
+                    <hr>
+                    <h6>Response:</h6>
+                    <div id="resultContent" class="p-3 border rounded bg-light">
+                        <!-- Response will appear here -->
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="copyDemoResult()">
+                            <i data-feather="copy" class="me-1"></i>Copy Response
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="submitRealTask()">
+                            <i data-feather="plus-circle" class="me-1"></i>Submit as Real Task
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="demoLoading" class="mt-4 text-center" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Processing...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Processing your query with {{ demo.title }}...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capabilities Info -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i data-feather="zap" class="me-2"></i>Key Capabilities
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% if demo_type == 'healthcare' %}
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Medical symptom analysis</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Medication recommendations</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Insurance navigation</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Wellness coaching</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Clinical decision support</li>
+                        </ul>
+                        {% elif demo_type == 'financial' %}
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Investment portfolio analysis</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Market data integration</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Financial planning strategies</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Risk assessment</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Banking integration</li>
+                        </ul>
+                        {% elif demo_type == 'sports' %}
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Game outcome predictions</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Arbitrage opportunity detection</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Fantasy sports optimization</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Statistical modeling</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Responsible gambling education</li>
+                        </ul>
+                        {% elif demo_type == 'business' %}
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Process automation design</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Workflow optimization</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Project management support</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Strategic planning</li>
+                            <li class="mb-2"><i data-feather="check" class="text-success me-2"></i>Operations analysis</li>
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i data-feather="info" class="me-2"></i>How It Works
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-primary"></div>
+                                <div class="timeline-content">
+                                    <strong>Query Analysis</strong>
+                                    <p class="small text-muted mb-0">Your query is analyzed to determine intent and requirements</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-info"></div>
+                                <div class="timeline-content">
+                                    <strong>Agent Selection</strong>
+                                    <p class="small text-muted mb-0">The best {{ demo_type }} specialist agent is automatically selected</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-warning"></div>
+                                <div class="timeline-content">
+                                    <strong>AI Processing</strong>
+                                    <p class="small text-muted mb-0">Advanced AI models process your request with domain expertise</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-success"></div>
+                                <div class="timeline-content">
+                                    <strong>Expert Response</strong>
+                                    <p class="small text-muted mb-0">You receive a comprehensive, expert-level response</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="text-center mt-4">
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-2">
+                <i data-feather="home" class="me-1"></i>Back to Dashboard
+            </a>
+            <a href="{{ url_for('submit_task') }}" class="btn btn-primary">
+                <i data-feather="plus-circle" class="me-1"></i>Submit Real Task
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentQuery = '';
+    let currentResponse = '';
+
+    function useExample(example) {
+        document.getElementById('demoQuery').value = example;
+        document.getElementById('demoQuery').focus();
+    }
+
+    document.getElementById('demoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const query = document.getElementById('demoQuery').value.trim();
+        if (!query) return;
+        
+        currentQuery = query;
+        
+        // Show loading state
+        document.getElementById('demoResult').style.display = 'none';
+        document.getElementById('demoLoading').style.display = 'block';
+        
+        // Simulate API call (replace with actual submission)
+        setTimeout(() => {
+            // Generate demo response based on agent type
+            const response = generateDemoResponse(query, '{{ demo_type }}');
+            currentResponse = response;
+            
+            // Show result
+            document.getElementById('resultContent').innerHTML = response;
+            document.getElementById('demoLoading').style.display = 'none';
+            document.getElementById('demoResult').style.display = 'block';
+            
+            // Scroll to result
+            document.getElementById('demoResult').scrollIntoView({ behavior: 'smooth' });
+        }, 2000);
+    });
+
+    function generateDemoResponse(query, demoType) {
+        // This is a demo response generator
+        const responses = {
+            'healthcare': `
+                <div class="alert alert-warning">
+                    <strong>MEDICAL DISCLAIMER:</strong> This is a demonstration response for educational purposes only. 
+                    Always consult with qualified healthcare professionals for medical concerns.
+                </div>
+                <p><strong>Healthcare AI Analysis:</strong></p>
+                <p>Based on your query about "${query}", here's a comprehensive healthcare analysis:</p>
+                <ul>
+                    <li>Relevant medical information and context</li>
+                    <li>Potential symptoms or conditions to consider</li>
+                    <li>Recommended next steps for professional consultation</li>
+                    <li>Preventive care and wellness recommendations</li>
+                </ul>
+                <p class="text-muted"><em>This analysis was generated by our Healthcare AI specialist agents with advanced medical knowledge and safety protocols.</em></p>
+            `,
+            'financial': `
+                <p><strong>Financial AI Analysis:</strong></p>
+                <p>Based on your financial query "${query}", here's a detailed analysis:</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Market Analysis</h6>
+                        <ul>
+                            <li>Current market conditions</li>
+                            <li>Relevant trends and indicators</li>
+                            <li>Risk assessment factors</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Recommendations</h6>
+                        <ul>
+                            <li>Strategic investment approaches</li>
+                            <li>Portfolio optimization suggestions</li>
+                            <li>Risk management strategies</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="text-muted"><em>Analysis powered by real-time market data and advanced financial modeling.</em></p>
+            `,
+            'sports': `
+                <div class="alert alert-info">
+                    <strong>RESPONSIBLE GAMBLING NOTICE:</strong> This analysis is for educational purposes only. 
+                    Always gamble responsibly and within legal limits.
+                </div>
+                <p><strong>Sports Analytics AI Analysis:</strong></p>
+                <p>Analyzing your sports query: "${query}"</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Statistical Analysis</h6>
+                        <ul>
+                            <li>Performance metrics and trends</li>
+                            <li>Historical data comparisons</li>
+                            <li>Key factors and variables</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Predictive Insights</h6>
+                        <ul>
+                            <li>Probability assessments</li>
+                            <li>Value analysis methodology</li>
+                            <li>Risk evaluation framework</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="text-muted"><em>Powered by advanced sports analytics and machine learning models.</em></p>
+            `,
+            'business': `
+                <p><strong>Business Automation AI Analysis:</strong></p>
+                <p>Analyzing your business optimization request: "${query}"</p>
+                <div class="card">
+                    <div class="card-body">
+                        <h6>Process Analysis</h6>
+                        <ul>
+                            <li>Current state assessment</li>
+                            <li>Efficiency bottlenecks identified</li>
+                            <li>Automation opportunities mapped</li>
+                        </ul>
+                        <h6>Optimization Strategy</h6>
+                        <ul>
+                            <li>Workflow redesign recommendations</li>
+                            <li>Technology integration points</li>
+                            <li>ROI projections and timeline</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="text-muted"><em>Enterprise-grade business process analysis and optimization recommendations.</em></p>
+            `
+        };
+        
+        return responses[demoType] || '<p>Demo response for general query processing.</p>';
+    }
+
+    function copyDemoResult() {
+        navigator.clipboard.writeText(currentResponse.replace(/<[^>]*>/g, '')).then(function() {
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i data-feather="check" class="me-1"></i>Copied!';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-secondary');
+                feather.replace();
+            }, 2000);
+        });
+    }
+
+    function submitRealTask() {
+        if (currentQuery) {
+            // Create a form and submit to the real task submission endpoint
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ url_for("submit_task") }}';
+            
+            const queryInput = document.createElement('input');
+            queryInput.type = 'hidden';
+            queryInput.name = 'query';
+            queryInput.value = currentQuery;
+            
+            const priorityInput = document.createElement('input');
+            priorityInput.type = 'hidden';
+            priorityInput.name = 'priority';
+            priorityInput.value = '5';
+            
+            form.appendChild(queryInput);
+            form.appendChild(priorityInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--bs-border-color);
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -1.75rem;
+        top: 0.25rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        border: 2px solid var(--bs-body-bg);
+    }
+    
+    .timeline-content {
+        margin-left: 0.5rem;
+    }
+</style>
+{% endblock %}

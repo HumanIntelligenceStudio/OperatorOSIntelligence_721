@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}User Sessions - OperatorOS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i data-feather="layers" class="me-2"></i>User Sessions
+    </h1>
+    <div>
+        <span class="badge bg-primary fs-6">{{ sessions|length }} Active Sessions</span>
+    </div>
+</div>
+
+<!-- Session Overview -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i data-feather="users" class="fs-2 text-primary mb-2"></i>
+                <h4 class="mb-0">{{ sessions|length }}</h4>
+                <small class="text-muted">Active Sessions</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i data-feather="clock" class="fs-2 text-info mb-2"></i>
+                <h4 class="mb-0">{{ sessions|map(attribute='conversation_context')|map('length')|sum }}</h4>
+                <small class="text-muted">Total Conversations</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i data-feather="activity" class="fs-2 text-success mb-2"></i>
+                <h4 class="mb-0">{{ sessions|selectattr('last_activity')|list|length }}</h4>
+                <small class="text-muted">Recently Active</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i data-feather="message-circle" class="fs-2 text-warning mb-2"></i>
+                <h4 class="mb-0">{{ sessions|map(attribute='tasks')|map('length')|sum }}</h4>
+                <small class="text-muted">Total Tasks</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session Details -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i data-feather="list" class="me-2"></i>Session Details
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if sessions %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Session ID</th>
+                        <th>User</th>
+                        <th>Created</th>
+                        <th>Last Activity</th>
+                        <th>Conversations</th>
+                        <th>Tasks</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr>
+                        <td>
+                            <code class="small">{{ session.session_id[:12] }}...</code>
+                        </td>
+                        <td>
+                            {% if session.user %}
+                                <div class="d-flex align-items-center">
+                                    <i data-feather="user" class="me-2 text-muted"></i>
+                                    <div>
+                                        <div class="fw-semibold">{{ session.user.username }}</div>
+                                        <div class="small text-muted">{{ session.user.email }}</div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">
+                                    <i data-feather="user-x" class="me-1"></i>Anonymous
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="text-muted" data-bs-toggle="tooltip" title="{{ session.created_at.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                {{ session.created_at.strftime('%m/%d %H:%M') }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if session.last_activity %}
+                                {% set time_diff = (moment.utcnow() - session.last_activity).total_seconds() %}
+                                <span class="text-muted" data-bs-toggle="tooltip" title="{{ session.last_activity.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                    {% if time_diff < 60 %}
+                                        <span class="text-success">Just now</span>
+                                    {% elif time_diff < 3600 %}
+                                        <span class="text-info">{{ "%.0f"|format(time_diff/60) }}m ago</span>
+                                    {% elif time_diff < 86400 %}
+                                        <span class="text-warning">{{ "%.0f"|format(time_diff/3600) }}h ago</span>
+                                    {% else %}
+                                        <span class="text-muted">{{ "%.0f"|format(time_diff/86400) }}d ago</span>
+                                    {% endif %}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if session.conversation_context %}
+                                <span class="badge bg-info">{{ session.conversation_context|length }}</span>
+                            {% else %}
+                                <span class="text-muted">0</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if session.tasks %}
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span class="badge bg-primary">{{ session.tasks|length }} total</span>
+                                    {% set completed_tasks = session.tasks|selectattr('status', 'equalto', 'completed')|list|length %}
+                                    {% set failed_tasks = session.tasks|selectattr('status', 'equalto', 'failed')|list|length %}
+                                    {% if completed_tasks > 0 %}
+                                        <span class="badge bg-success">{{ completed_tasks }} completed</span>
+                                    {% endif %}
+                                    {% if failed_tasks > 0 %}
+                                        <span class="badge bg-danger">{{ failed_tasks }} failed</span>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted">0</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if session.is_active %}
+                                <span class="badge bg-success">
+                                    <i data-feather="wifi" class="me-1" style="width: 12px; height: 12px;"></i>
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i data-feather="wifi-off" class="me-1" style="width: 12px; height: 12px;"></i>
+                                    Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" 
+                                        class="btn btn-outline-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#sessionModal"
+                                        onclick="viewSessionDetails('{{ session.session_id }}')"
+                                        data-bs-toggle="tooltip" title="View Details">
+                                    <i data-feather="eye"></i>
+                                </button>
+                                {% if session.conversation_context %}
+                                <button type="button" 
+                                        class="btn btn-outline-info"
+                                        onclick="viewConversationHistory('{{ session.session_id }}')"
+                                        data-bs-toggle="tooltip" title="View Conversation">
+                                    <i data-feather="message-square"></i>
+                                </button>
+                                {% endif %}
+                                {% if not session.is_active %}
+                                <button type="button" 
+                                        class="btn btn-outline-danger"
+                                        onclick="archiveSession('{{ session.session_id }}')"
+                                        data-bs-toggle="tooltip" title="Archive Session">
+                                    <i data-feather="archive"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i data-feather="users" class="fs-1 text-muted mb-3"></i>
+            <h5 class="text-muted">No active sessions</h5>
+            <p class="text-muted">
+                User sessions will appear here when tasks are submitted or when users interact with the system.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Session Details Modal -->
+<div class="modal fade" id="sessionModal" tabindex="-1" aria-labelledby="sessionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sessionModalLabel">
+                    <i data-feather="layers" class="me-2"></i>Session Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="sessionModalBody">
+                <!-- Session details will be loaded here -->
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Conversation History Modal -->
+<div class="modal fade" id="conversationModal" tabindex="-1" aria-labelledby="conversationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="conversationModalLabel">
+                    <i data-feather="message-square" class="me-2"></i>Conversation History
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="conversationModalBody" style="max-height: 600px; overflow-y: auto;">
+                <!-- Conversation history will be loaded here -->
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function viewSessionDetails(sessionId) {
+        // Load session details
+        document.getElementById('sessionModalBody').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        
+        // Simulate loading session details
+        setTimeout(() => {
+            document.getElementById('sessionModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Session Information</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Session ID:</dt>
+                            <dd class="col-sm-8"><code>${sessionId}</code></dd>
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8"><span class="badge bg-success">Active</span></dd>
+                            <dt class="col-sm-4">Duration:</dt>
+                            <dd class="col-sm-8">2h 34m</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Activity Summary</h6>
+                        <dl class="row">
+                            <dt class="col-sm-6">Total Tasks:</dt>
+                            <dd class="col-sm-6">12</dd>
+                            <dt class="col-sm-6">Completed:</dt>
+                            <dd class="col-sm-6">10</dd>
+                            <dt class="col-sm-6">Failed:</dt>
+                            <dd class="col-sm-6">1</dd>
+                            <dt class="col-sm-6">Pending:</dt>
+                            <dd class="col-sm-6">1</dd>
+                        </dl>
+                    </div>
+                </div>
+            `;
+        }, 500);
+    }
+
+    function viewConversationHistory(sessionId) {
+        // Load conversation history
+        document.getElementById('conversationModalBody').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        
+        // Show the modal
+        new bootstrap.Modal(document.getElementById('conversationModal')).show();
+        
+        // Simulate loading conversation history
+        setTimeout(() => {
+            document.getElementById('conversationModalBody').innerHTML = `
+                <div class="conversation-thread">
+                    <div class="mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>User Query:</strong>
+                            <small class="text-muted">2 hours ago</small>
+                        </div>
+                        <p class="mb-0">What are the symptoms of diabetes?</p>
+                    </div>
+                    <div class="mb-3 p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>Healthcare AI Response:</strong>
+                            <span class="badge bg-danger">Healthcare</span>
+                        </div>
+                        <p class="mb-0">Common symptoms of diabetes include increased thirst, frequent urination, unexplained weight loss, fatigue, and blurred vision...</p>
+                    </div>
+                    <div class="mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>User Query:</strong>
+                            <small class="text-muted">1 hour ago</small>
+                        </div>
+                        <p class="mb-0">Analyze AAPL stock performance</p>
+                    </div>
+                    <div class="mb-3 p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>Financial AI Response:</strong>
+                            <span class="badge bg-success">Financial</span>
+                        </div>
+                        <p class="mb-0">AAPL has shown strong performance over the past quarter with a 12% increase...</p>
+                    </div>
+                </div>
+            `;
+        }, 500);
+    }
+
+    function archiveSession(sessionId) {
+        if (confirm('Are you sure you want to archive this session?')) {
+            // Archive session logic would go here
+            alert('Session archived successfully');
+            location.reload();
+        }
+    }
+
+    // Auto-refresh sessions every 60 seconds
+    setInterval(function() {
+        location.reload();
+    }, 60000);
+</script>
+{% endblock %}

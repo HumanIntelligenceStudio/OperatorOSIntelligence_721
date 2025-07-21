@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - OperatorOS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i data-feather="shield" class="me-2"></i>Admin Dashboard
+    </h1>
+    <div>
+        <a href="{{ url_for('admin_agents') }}" class="btn btn-outline-primary me-2">
+            <i data-feather="users" class="me-1"></i>Manage Agents
+        </a>
+        <a href="{{ url_for('admin_tasks') }}" class="btn btn-outline-secondary me-2">
+            <i data-feather="list" class="me-1"></i>Task Management
+        </a>
+        <a href="{{ url_for('admin_system') }}" class="btn btn-outline-info">
+            <i data-feather="settings" class="me-1"></i>System Config
+        </a>
+    </div>
+</div>
+
+<!-- System Overview Cards -->
+<div class="row mb-4">
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i data-feather="cpu" class="fs-1 text-primary mb-2"></i>
+                <h4 class="mb-1">{{ system_metrics.total_agents }}</h4>
+                <p class="mb-0 text-muted small">Total Agents</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i data-feather="play-circle" class="fs-1 text-success mb-2"></i>
+                <h4 class="mb-1">{{ system_metrics.active_agents }}</h4>
+                <p class="mb-0 text-muted small">Active Agents</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <i data-feather="alert-circle" class="fs-1 text-danger mb-2"></i>
+                <h4 class="mb-1">{{ system_metrics.failed_agents }}</h4>
+                <p class="mb-0 text-muted small">Failed Agents</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i data-feather="file-text" class="fs-1 text-info mb-2"></i>
+                <h4 class="mb-1">{{ system_metrics.total_tasks }}</h4>
+                <p class="mb-0 text-muted small">Total Tasks</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i data-feather="check-circle" class="fs-1 text-warning mb-2"></i>
+                <h4 class="mb-1">{{ system_metrics.completed_tasks }}</h4>
+                <p class="mb-0 text-muted small">Completed</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="card border-secondary">
+            <div class="card-body text-center">
+                <i data-feather="users" class="fs-1 text-secondary mb-2"></i>
+                <h4 class="mb-1">{{ system_metrics.active_sessions }}</h4>
+                <p class="mb-0 text-muted small">Active Sessions</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Agent Pool Performance -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="layers" class="me-2"></i>Agent Pool Performance
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Pool</th>
+                                <th>Agents</th>
+                                <th>Active/Failed</th>
+                                <th>Total Tasks</th>
+                                <th>Success Rate</th>
+                                <th>Avg Response Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pool_name, stats in agent_pools.items() %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if pool_name == 'healthcare' %}
+                                            <i data-feather="heart" class="text-danger me-2"></i>
+                                        {% elif pool_name == 'financial' %}
+                                            <i data-feather="dollar-sign" class="text-success me-2"></i>
+                                        {% elif pool_name == 'sports' %}
+                                            <i data-feather="target" class="text-info me-2"></i>
+                                        {% elif pool_name == 'business' %}
+                                            <i data-feather="briefcase" class="text-warning me-2"></i>
+                                        {% else %}
+                                            <i data-feather="cpu" class="text-secondary me-2"></i>
+                                        {% endif %}
+                                        <strong class="text-capitalize">{{ pool_name }}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ stats.total_agents }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success me-1">{{ stats.active_agents }}</span>
+                                    {% if stats.failed_agents > 0 %}
+                                        <span class="badge bg-danger">{{ stats.failed_agents }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ stats.total_tasks }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 100px; height: 8px;">
+                                            <div class="progress-bar 
+                                                {% if stats.success_rate >= 90 %}bg-success
+                                                {% elif stats.success_rate >= 70 %}bg-warning
+                                                {% else %}bg-danger{% endif %}"
+                                                 style="width: {{ stats.success_rate }}%">
+                                            </div>
+                                        </div>
+                                        <small>{{ "%.1f"|format(stats.success_rate) }}%</small>
+                                    </div>
+                                </td>
+                                <td>{{ "%.2f"|format(stats.avg_response_time) }}s</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <form method="post" action="{{ url_for('admin_scale_pool', pool_name=pool_name) }}" class="d-inline">
+                                            <input type="hidden" name="action" value="scale_up">
+                                            <button type="submit" class="btn btn-outline-success" data-bs-toggle="tooltip" title="Scale Up">
+                                                <i data-feather="plus"></i>
+                                            </button>
+                                        </form>
+                                        <form method="post" action="{{ url_for('admin_scale_pool', pool_name=pool_name) }}" class="d-inline">
+                                            <input type="hidden" name="action" value="scale_down">
+                                            <button type="submit" class="btn btn-outline-warning" data-bs-toggle="tooltip" title="Scale Down">
+                                                <i data-feather="minus"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Performance -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="activity" class="me-2"></i>System Performance
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>System Uptime</span>
+                        <strong>{{ performance_metrics.system_uptime }}</strong>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Avg Task Time</span>
+                        <strong>{{ "%.2f"|format(performance_metrics.avg_task_completion_time) }}s</strong>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-info" style="width: {{ min(100, (5 - performance_metrics.avg_task_completion_time) * 20) }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Tasks/Hour</span>
+                        <strong>{{ "%.1f"|format(performance_metrics.tasks_per_hour) }}</strong>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" style="width: {{ min(100, performance_metrics.tasks_per_hour * 2) }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-0">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Error Rate</span>
+                        <strong>{{ "%.1f"|format(performance_metrics.error_rate) }}%</strong>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar {% if performance_metrics.error_rate > 10 %}bg-danger{% elif performance_metrics.error_rate > 5 %}bg-warning{% else %}bg-success{% endif %}" 
+                             style="width: {{ min(100, performance_metrics.error_rate * 5) }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Metrics -->
+{% if recent_metrics %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="trending-up" class="me-2"></i>Real-time System Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="realTimeMetrics" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions Panel -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="zap" class="me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin_agents') }}" class="btn btn-outline-primary">
+                        <i data-feather="users" class="me-2"></i>Manage Agent Pools
+                    </a>
+                    <a href="{{ url_for('admin_tasks') }}" class="btn btn-outline-secondary">
+                        <i data-feather="list" class="me-2"></i>Task Queue Management
+                    </a>
+                    <a href="{{ url_for('admin_system') }}" class="btn btn-outline-info">
+                        <i data-feather="settings" class="me-2"></i>System Configuration
+                    </a>
+                    <a href="{{ url_for('admin_logs') }}" class="btn btn-outline-warning">
+                        <i data-feather="file-text" class="me-2"></i>View System Logs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="alert-triangle" class="me-2"></i>System Health
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Database Connection</span>
+                        <span class="badge bg-success rounded-pill">Healthy</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Agent Controller</span>
+                        <span class="badge bg-success rounded-pill">Running</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Task Processor</span>
+                        <span class="badge bg-success rounded-pill">Active</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Health Monitor</span>
+                        <span class="badge bg-success rounded-pill">Monitoring</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Auto Scaler</span>
+                        <span class="badge bg-success rounded-pill">Enabled</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    {% if recent_metrics %}
+    // Real-time metrics chart
+    const ctx = document.getElementById('realTimeMetrics').getContext('2d');
+    const realTimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [
+                {% for metric in recent_metrics[-20:] %}
+                '{{ metric.timestamp.strftime("%H:%M") }}'{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Active Agents',
+                data: [
+                    {% for metric in recent_metrics[-20:] %}
+                    {{ metric.active_agents }}{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ],
+                borderColor: 'rgb(40, 167, 69)',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Total Requests',
+                data: [
+                    {% for metric in recent_metrics[-20:] %}
+                    {{ metric.total_requests }}{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ],
+                borderColor: 'rgb(0, 123, 255)',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.4,
+                fill: true,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false,
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Auto-refresh admin dashboard every 30 seconds
+    setInterval(function() {
+        // Fetch updated metrics via API
+        fetch('/admin/api/metrics')
+            .then(response => response.json())
+            .then(data => {
+                // Update key metrics without full page reload
+                updateMetrics(data);
+            })
+            .catch(error => console.log('Metrics update failed:', error));
+    }, 30000);
+
+    function updateMetrics(data) {
+        // Update agent stats, task stats, etc.
+        // This would update specific elements without full page reload
+        console.log('Metrics updated:', data);
+    }
+</script>
+{% endblock %}

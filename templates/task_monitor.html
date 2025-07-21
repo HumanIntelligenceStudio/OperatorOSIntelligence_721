@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Task Monitor - OperatorOS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i data-feather="monitor" class="me-2"></i>Task Monitor
+    </h1>
+    <div>
+        <a href="{{ url_for('submit_task') }}" class="btn btn-primary">
+            <i data-feather="plus-circle" class="me-1"></i>Submit Task
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>Processing</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="pool" class="form-label">Agent Pool</label>
+                <select name="pool" id="pool" class="form-select">
+                    <option value="all" {% if pool_filter == 'all' %}selected{% endif %}>All Pools</option>
+                    <option value="healthcare" {% if pool_filter == 'healthcare' %}selected{% endif %}>Healthcare</option>
+                    <option value="financial" {% if pool_filter == 'financial' %}selected{% endif %}>Financial</option>
+                    <option value="sports" {% if pool_filter == 'sports' %}selected{% endif %}>Sports</option>
+                    <option value="business" {% if pool_filter == 'business' %}selected{% endif %}>Business</option>
+                    <option value="general" {% if pool_filter == 'general' %}selected{% endif %}>General</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i data-feather="filter" class="me-1"></i>Filter
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a href="{{ url_for('task_monitor') }}" class="btn btn-outline-secondary w-100">
+                    <i data-feather="x" class="me-1"></i>Clear
+                </a>
+            </div>
+            <div class="col-md-2">
+                <button type="button" onclick="refreshTasks()" class="btn btn-outline-info w-100">
+                    <i data-feather="refresh-cw" class="me-1"></i>Refresh
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Task List -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i data-feather="list" class="me-2"></i>Tasks
+                {% if tasks.total > 0 %}
+                    <span class="badge bg-secondary">{{ tasks.total }} total</span>
+                {% endif %}
+            </h5>
+            <div class="small text-muted">
+                {% if tasks.items %}
+                    Showing {{ tasks.per_page * (tasks.page - 1) + 1 }} - {{ tasks.per_page * (tasks.page - 1) + tasks.items|length }} of {{ tasks.total }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if tasks.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Task ID</th>
+                        <th>Query</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Agent Pool</th>
+                        <th>Created</th>
+                        <th>Processing Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks.items %}
+                    <tr>
+                        <td>
+                            <code class="small">{{ task.task_id[:12] }}...</code>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 250px;" data-bs-toggle="tooltip" title="{{ task.query }}">
+                                {{ task.query }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if task.status == 'completed' %}
+                                <span class="badge bg-success">
+                                    <i data-feather="check-circle" class="me-1" style="width: 12px; height: 12px;"></i>
+                                    {{ task.status.title() }}
+                                </span>
+                            {% elif task.status == 'failed' %}
+                                <span class="badge bg-danger">
+                                    <i data-feather="x-circle" class="me-1" style="width: 12px; height: 12px;"></i>
+                                    {{ task.status.title() }}
+                                </span>
+                            {% elif task.status == 'processing' %}
+                                <span class="badge bg-primary">
+                                    <i data-feather="play-circle" class="me-1" style="width: 12px; height: 12px;"></i>
+                                    {{ task.status.title() }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i data-feather="clock" class="me-1" style="width: 12px; height: 12px;"></i>
+                                    {{ task.status.title() }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if task.priority <= 3 %}bg-danger{% elif task.priority <= 6 %}bg-warning{% else %}bg-info{% endif %}">
+                                {% if task.priority <= 3 %}High{% elif task.priority <= 6 %}Medium{% else %}Low{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if task.agent %}
+                                {% if task.agent.pool_name == 'healthcare' %}
+                                    <span class="badge bg-danger">
+                                        <i data-feather="heart" class="me-1" style="width: 12px; height: 12px;"></i>
+                                        Healthcare
+                                    </span>
+                                {% elif task.agent.pool_name == 'financial' %}
+                                    <span class="badge bg-success">
+                                        <i data-feather="dollar-sign" class="me-1" style="width: 12px; height: 12px;"></i>
+                                        Financial
+                                    </span>
+                                {% elif task.agent.pool_name == 'sports' %}
+                                    <span class="badge bg-info">
+                                        <i data-feather="target" class="me-1" style="width: 12px; height: 12px;"></i>
+                                        Sports
+                                    </span>
+                                {% elif task.agent.pool_name == 'business' %}
+                                    <span class="badge bg-warning">
+                                        <i data-feather="briefcase" class="me-1" style="width: 12px; height: 12px;"></i>
+                                        Business
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i data-feather="cpu" class="me-1" style="width: 12px; height: 12px;"></i>
+                                        General
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="text-muted" data-bs-toggle="tooltip" title="{{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                {{ task.created_at.strftime('%m/%d %H:%M') }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if task.processing_time %}
+                                <span class="badge {% if task.processing_time > 10 %}bg-warning{% elif task.processing_time > 30 %}bg-danger{% else %}bg-success{% endif %}">
+                                    {{ "%.2f"|format(task.processing_time) }}s
+                                </span>
+                            {% elif task.status == 'processing' %}
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Processing...</span>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('task_status', task_id=task.task_id) }}" 
+                                   class="btn btn-outline-primary" 
+                                   data-bs-toggle="tooltip" title="View Details">
+                                    <i data-feather="eye"></i>
+                                </a>
+                                {% if task.status == 'failed' %}
+                                <button type="button" 
+                                        class="btn btn-outline-warning"
+                                        data-bs-toggle="tooltip" title="Retry Task"
+                                        onclick="retryTask('{{ task.task_id }}')">
+                                    <i data-feather="refresh-ccw"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if tasks.pages > 1 %}
+        <nav aria-label="Task pagination">
+            <ul class="pagination justify-content-center">
+                {% if tasks.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('task_monitor', page=tasks.prev_num, status=status_filter, pool=pool_filter) }}">
+                            <i data-feather="chevron-left"></i> Previous
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in tasks.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != tasks.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('task_monitor', page=page_num, status=status_filter, pool=pool_filter) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if tasks.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('task_monitor', page=tasks.next_num, status=status_filter, pool=pool_filter) }}">
+                            Next <i data-feather="chevron-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <i data-feather="inbox" class="fs-1 text-muted mb-3"></i>
+            <h5 class="text-muted">No tasks found</h5>
+            <p class="text-muted">
+                {% if status_filter != 'all' or pool_filter != 'all' %}
+                    No tasks match your current filters. Try adjusting the filters or clearing them.
+                {% else %}
+                    No tasks have been submitted yet. Submit your first task to get started.
+                {% endif %}
+            </p>
+            {% if status_filter == 'all' and pool_filter == 'all' %}
+            <a href="{{ url_for('submit_task') }}" class="btn btn-primary">
+                <i data-feather="plus-circle" class="me-2"></i>Submit First Task
+            </a>
+            {% else %}
+            <a href="{{ url_for('task_monitor') }}" class="btn btn-outline-secondary">
+                <i data-feather="x" class="me-2"></i>Clear Filters
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function refreshTasks() {
+        location.reload();
+    }
+
+    function retryTask(taskId) {
+        if (confirm('Are you sure you want to retry this task?')) {
+            // In a real implementation, this would make an API call
+            fetch(`/admin/tasks/${taskId}/retry`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to retry task');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to retry task');
+            });
+        }
+    }
+
+    // Auto-refresh every 30 seconds
+    setInterval(refreshTasks, 30000);
+
+    // Initialize Feather icons in dynamically loaded content
+    feather.replace();
+</script>
+{% endblock %}

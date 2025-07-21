@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Management - OperatorOS Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i data-feather="users" class="me-2"></i>Agent Management
+    </h1>
+    <div>
+        <span class="badge bg-primary fs-6">{{ total_agents }} Total Agents</span>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary ms-2">
+            <i data-feather="arrow-left" class="me-1"></i>Back to Admin
+        </a>
+    </div>
+</div>
+
+<!-- Agent Pool Management -->
+{% for pool_name, agents in agents_by_pool.items() %}
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                {% if pool_name == 'healthcare' %}
+                    <i data-feather="heart" class="text-danger me-2"></i>Healthcare Pool
+                {% elif pool_name == 'financial' %}
+                    <i data-feather="dollar-sign" class="text-success me-2"></i>Financial Pool
+                {% elif pool_name == 'sports' %}
+                    <i data-feather="target" class="text-info me-2"></i>Sports Pool
+                {% elif pool_name == 'business' %}
+                    <i data-feather="briefcase" class="text-warning me-2"></i>Business Pool
+                {% else %}
+                    <i data-feather="cpu" class="text-secondary me-2"></i>General Pool
+                {% endif %}
+                <span class="badge bg-secondary">{{ agents|length }} agents</span>
+            </h5>
+            
+            <div class="btn-group">
+                <form method="post" action="{{ url_for('admin_scale_pool', pool_name=pool_name) }}" class="d-inline">
+                    <input type="hidden" name="action" value="scale_up">
+                    <button type="submit" class="btn btn-outline-success btn-sm" data-bs-toggle="tooltip" title="Add Agent">
+                        <i data-feather="plus"></i> Scale Up
+                    </button>
+                </form>
+                <form method="post" action="{{ url_for('admin_scale_pool', pool_name=pool_name) }}" class="d-inline">
+                    <input type="hidden" name="action" value="scale_down">
+                    <button type="submit" class="btn btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Remove Agent">
+                        <i data-feather="minus"></i> Scale Down
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    {% if agents %}
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Agent ID</th>
+                        <th>Status</th>
+                        <th>Load</th>
+                        <th>Performance</th>
+                        <th>Tasks</th>
+                        <th>Response Time</th>
+                        <th>Last Health Check</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for agent in agents %}
+                    <tr>
+                        <td>
+                            <code class="small">{{ agent.instance_id }}</code>
+                        </td>
+                        <td>
+                            {% if agent.status == 'idle' %}
+                                <span class="badge bg-success">
+                                    <i data-feather="pause-circle" style="width: 12px; height: 12px;" class="me-1"></i>
+                                    Idle
+                                </span>
+                            {% elif agent.status == 'busy' %}
+                                <span class="badge bg-warning">
+                                    <i data-feather="play-circle" style="width: 12px; height: 12px;" class="me-1"></i>
+                                    Busy
+                                </span>
+                            {% elif agent.status == 'failed' %}
+                                <span class="badge bg-danger">
+                                    <i data-feather="x-circle" style="width: 12px; height: 12px;" class="me-1"></i>
+                                    Failed
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i data-feather="circle" style="width: 12px; height: 12px;" class="me-1"></i>
+                                    {{ agent.status.title() }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress me-2" style="width: 80px; height: 8px;">
+                                    {% set load_percentage = (agent.current_load / agent.max_capacity * 100) if agent.max_capacity > 0 else 0 %}
+                                    <div class="progress-bar 
+                                        {% if load_percentage > 80 %}bg-danger
+                                        {% elif load_percentage > 60 %}bg-warning
+                                        {% else %}bg-success{% endif %}" 
+                                         style="width: {{ load_percentage }}%">
+                                    </div>
+                                </div>
+                                <small>{{ agent.current_load }}/{{ agent.max_capacity }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress me-2" style="width: 80px; height: 8px;">
+                                    <div class="progress-bar 
+                                        {% if agent.success_rate >= 90 %}bg-success
+                                        {% elif agent.success_rate >= 70 %}bg-warning
+                                        {% else %}bg-danger{% endif %}" 
+                                         style="width: {{ agent.success_rate }}%">
+                                    </div>
+                                </div>
+                                <small>{{ "%.1f"|format(agent.success_rate) }}%</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="small">
+                                <div class="text-success">✓ {{ agent.successful_tasks }}</div>
+                                {% if agent.failed_tasks > 0 %}
+                                    <div class="text-danger">✗ {{ agent.failed_tasks }}</div>
+                                {% endif %}
+                                <div class="text-muted">{{ agent.total_tasks }} total</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if agent.avg_response_time > 30 %}bg-danger
+                                {% elif agent.avg_response_time > 10 %}bg-warning
+                                {% else %}bg-success{% endif %}">
+                                {{ "%.2f"|format(agent.avg_response_time) }}s
+                            </span>
+                        </td>
+                        <td>
+                            {% if agent.last_health_check %}
+                                <span class="text-muted small" data-bs-toggle="tooltip" 
+                                      title="{{ agent.last_health_check.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                    {{ agent.last_health_check.strftime('%m/%d %H:%M') }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">Never</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                {% if agent.status == 'failed' %}
+                                    <form method="post" action="{{ url_for('admin_restart_agent', agent_id=agent.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-success" 
+                                                data-bs-toggle="tooltip" title="Restart Agent"
+                                                onclick="return confirm('Restart this agent?')">
+                                            <i data-feather="refresh-cw"></i>
+                                        </button>
+                                    </form>
+                                {% elif agent.status == 'busy' %}
+                                    <button type="button" class="btn btn-outline-warning" 
+                                            data-bs-toggle="tooltip" title="Agent is busy">
+                                        <i data-feather="clock"></i>
+                                    </button>
+                                {% else %}
+                                    <button type="button" class="btn btn-outline-info" 
+                                            data-bs-toggle="tooltip" title="Agent is healthy">
+                                        <i data-feather="check-circle"></i>
+                                    </button>
+                                {% endif %}
+                                
+                                <button type="button" class="btn btn-outline-secondary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#agentModal"
+                                        onclick="viewAgentDetails('{{ agent.instance_id }}')"
+                                        data-bs-toggle="tooltip" title="View Details">
+                                    <i data-feather="eye"></i>
+                                </button>
+                                
+                                <form method="post" action="{{ url_for('admin_delete_agent', agent_id=agent.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger" 
+                                            data-bs-toggle="tooltip" title="Delete Agent"
+                                            onclick="return confirm('Are you sure you want to delete this agent?')">
+                                        <i data-feather="trash-2"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card-body text-center py-4">
+        <i data-feather="inbox" class="fs-1 text-muted mb-3"></i>
+        <h6 class="text-muted">No agents in this pool</h6>
+        <form method="post" action="{{ url_for('admin_scale_pool', pool_name=pool_name) }}" class="d-inline">
+            <input type="hidden" name="action" value="scale_up">
+            <button type="submit" class="btn btn-primary">
+                <i data-feather="plus" class="me-1"></i>Add First Agent
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+
+<!-- Agent Details Modal -->
+<div class="modal fade" id="agentModal" tabindex="-1" aria-labelledby="agentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="agentModalLabel">
+                    <i data-feather="cpu" class="me-2"></i>Agent Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="agentModalBody">
+                <!-- Agent details will be loaded here -->
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pool Statistics Summary -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="bar-chart-2" class="me-2"></i>Pool Statistics Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for pool_name, agents in agents_by_pool.items() %}
+                    <div class="col-md-6 col-xl-2dot4 mb-3">
+                        <div class="card border">
+                            <div class="card-body text-center">
+                                <div class="mb-2">
+                                    {% if pool_name == 'healthcare' %}
+                                        <i data-feather="heart" class="text-danger fs-4"></i>
+                                    {% elif pool_name == 'financial' %}
+                                        <i data-feather="dollar-sign" class="text-success fs-4"></i>
+                                    {% elif pool_name == 'sports' %}
+                                        <i data-feather="target" class="text-info fs-4"></i>
+                                    {% elif pool_name == 'business' %}
+                                        <i data-feather="briefcase" class="text-warning fs-4"></i>
+                                    {% else %}
+                                        <i data-feather="cpu" class="text-secondary fs-4"></i>
+                                    {% endif %}
+                                </div>
+                                <h6 class="text-capitalize">{{ pool_name }}</h6>
+                                
+                                {% set active_agents = agents|selectattr('status', 'in', ['idle', 'busy'])|list|length %}
+                                {% set failed_agents = agents|selectattr('status', 'equalto', 'failed')|list|length %}
+                                {% set total_tasks = agents|map(attribute='total_tasks')|sum %}
+                                {% set success_rate = (agents|map(attribute='successful_tasks')|sum / total_tasks * 100) if total_tasks > 0 else 100 %}
+                                
+                                <div class="row g-1 text-center small">
+                                    <div class="col-6">
+                                        <div class="text-success fw-bold">{{ active_agents }}</div>
+                                        <div class="text-muted">Active</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-primary fw-bold">{{ agents|length }}</div>
+                                        <div class="text-muted">Total</div>
+                                    </div>
+                                </div>
+                                
+                                {% if failed_agents > 0 %}
+                                <div class="mt-2">
+                                    <span class="badge bg-danger">{{ failed_agents }} Failed</span>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mt-2">
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar bg-success" style="width: {{ success_rate }}%"></div>
+                                    </div>
+                                    <div class="small text-muted">{{ "%.0f"|format(success_rate) }}% Success</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function viewAgentDetails(agentId) {
+        // Load agent details
+        document.getElementById('agentModalBody').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        
+        // Simulate loading agent details
+        setTimeout(() => {
+            document.getElementById('agentModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Agent Information</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Agent ID:</dt>
+                            <dd class="col-sm-8"><code>${agentId}</code></dd>
+                            <dt class="col-sm-4">Pool:</dt>
+                            <dd class="col-sm-8">${agentId.split('_')[0].charAt(0).toUpperCase() + agentId.split('_')[0].slice(1)}</dd>
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8"><span class="badge bg-success">Active</span></dd>
+                            <dt class="col-sm-4">Created:</dt>
+                            <dd class="col-sm-8">2 hours ago</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Performance Metrics</h6>
+                        <dl class="row">
+                            <dt class="col-sm-6">Total Tasks:</dt>
+                            <dd class="col-sm-6">247</dd>
+                            <dt class="col-sm-6">Successful:</dt>
+                            <dd class="col-sm-6">242</dd>
+                            <dt class="col-sm-6">Failed:</dt>
+                            <dd class="col-sm-6">5</dd>
+                            <dt class="col-sm-6">Success Rate:</dt>
+                            <dd class="col-sm-6">98.0%</dd>
+                            <dt class="col-sm-6">Avg Response:</dt>
+                            <dd class="col-sm-6">2.3s</dd>
+                        </dl>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6>Recent Activity</h6>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>Task completed successfully</span>
+                            <small class="text-muted">2 minutes ago</small>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>Health check passed</span>
+                            <small class="text-muted">5 minutes ago</small>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>Task processing started</span>
+                            <small class="text-muted">8 minutes ago</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }, 500);
+    }
+
+    // Auto-refresh agent status every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+</script>
+
+<style>
+    .col-xl-2dot4 {
+        flex: 0 0 auto;
+        width: 20%;
+    }
+    
+    @media (max-width: 1199.98px) {
+        .col-xl-2dot4 {
+            width: 50%;
+        }
+    }
+    
+    @media (max-width: 767.98px) {
+        .col-xl-2dot4 {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

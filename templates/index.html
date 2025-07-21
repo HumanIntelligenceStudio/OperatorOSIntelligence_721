@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}OperatorOS Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- System Status Overview -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i data-feather="activity" class="me-2"></i>System Status
+                </h5>
+                <span class="badge bg-success">
+                    <i data-feather="check-circle" class="me-1"></i>Operational
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i data-feather="users" class="text-primary fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-semibold">{{ system_status.total_agents }}</div>
+                                <div class="text-muted small">Total Agents</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i data-feather="play-circle" class="text-success fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-semibold">{{ system_status.active_agents }}</div>
+                                <div class="text-muted small">Active Agents</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i data-feather="clock" class="text-info fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-semibold">{{ system_status.pending_tasks }}</div>
+                                <div class="text-muted small">Pending Tasks</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i data-feather="zap" class="text-warning fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-semibold">{{ system_status.uptime }}</div>
+                                <div class="text-muted small">System Uptime</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Agent Pools Status -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="layers" class="me-2"></i>Agent Pools
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for pool_name, stats in agent_pools.items() %}
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card border">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    {% if pool_name == 'healthcare' %}
+                                        <i data-feather="heart" class="text-danger fs-2"></i>
+                                    {% elif pool_name == 'financial' %}
+                                        <i data-feather="dollar-sign" class="text-success fs-2"></i>
+                                    {% elif pool_name == 'sports' %}
+                                        <i data-feather="target" class="text-info fs-2"></i>
+                                    {% elif pool_name == 'business' %}
+                                        <i data-feather="briefcase" class="text-warning fs-2"></i>
+                                    {% else %}
+                                        <i data-feather="cpu" class="text-secondary fs-2"></i>
+                                    {% endif %}
+                                </div>
+                                <h6 class="card-title text-capitalize">{{ pool_name }}</h6>
+                                <div class="row g-2 text-center">
+                                    <div class="col-6">
+                                        <div class="fs-5 fw-bold text-success">{{ stats.active }}</div>
+                                        <div class="small text-muted">Active</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="fs-5 fw-bold text-primary">{{ stats.total }}</div>
+                                        <div class="small text-muted">Total</div>
+                                    </div>
+                                </div>
+                                {% if stats.failed > 0 %}
+                                <div class="mt-2">
+                                    <span class="badge bg-danger">{{ stats.failed }} Failed</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="zap" class="me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('submit_task') }}" class="btn btn-primary">
+                        <i data-feather="plus-circle" class="me-2"></i>Submit New Task
+                    </a>
+                    <a href="{{ url_for('agent_pools') }}" class="btn btn-outline-secondary">
+                        <i data-feather="users" class="me-2"></i>Manage Agent Pools
+                    </a>
+                    <a href="{{ url_for('task_monitor') }}" class="btn btn-outline-secondary">
+                        <i data-feather="monitor" class="me-2"></i>Monitor Tasks
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                        <i data-feather="bar-chart-2" class="me-2"></i>View Analytics
+                    </a>
+                </div>
+
+                <hr class="my-4">
+
+                <h6 class="mb-3">Specialized Agents</h6>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('demo_showcase', demo_type='healthcare') }}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i data-feather="heart" class="me-3 text-danger"></i>
+                        <div>
+                            <div class="fw-semibold">Healthcare AI</div>
+                            <div class="small text-muted">Medical analysis & guidance</div>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('demo_showcase', demo_type='financial') }}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i data-feather="dollar-sign" class="me-3 text-success"></i>
+                        <div>
+                            <div class="fw-semibold">Financial Advisor</div>
+                            <div class="small text-muted">Investment & planning</div>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('demo_showcase', demo_type='sports') }}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i data-feather="target" class="me-3 text-info"></i>
+                        <div>
+                            <div class="fw-semibold">Sports Analytics</div>
+                            <div class="small text-muted">Predictions & analysis</div>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('demo_showcase', demo_type='business') }}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i data-feather="briefcase" class="me-3 text-warning"></i>
+                        <div>
+                            <div class="fw-semibold">Business Automation</div>
+                            <div class="small text-muted">Process optimization</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Tasks -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i data-feather="list" class="me-2"></i>Recent Tasks
+                </h5>
+                <a href="{{ url_for('task_monitor') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_tasks %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Task ID</th>
+                                <th>Query</th>
+                                <th>Status</th>
+                                <th>Agent Pool</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in recent_tasks %}
+                            <tr>
+                                <td>
+                                    <code class="small">{{ task.task_id[:12] }}...</code>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 200px;">
+                                        {{ task.query }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if task.status == 'completed' %}
+                                        <span class="badge bg-success">{{ task.status.title() }}</span>
+                                    {% elif task.status == 'failed' %}
+                                        <span class="badge bg-danger">{{ task.status.title() }}</span>
+                                    {% elif task.status == 'processing' %}
+                                        <span class="badge bg-primary">{{ task.status.title() }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ task.status.title() }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.agent %}
+                                        <span class="badge bg-info">{{ task.agent.pool_name.title() }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="text-muted" data-bs-toggle="tooltip" title="{{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                        {{ task.created_at.strftime('%m/%d %H:%M') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('task_status', task_id=task.task_id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="eye" class="me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i data-feather="inbox" class="fs-1 text-muted mb-3"></i>
+                    <h6 class="text-muted">No recent tasks</h6>
+                    <p class="text-muted">Submit your first task to get started with OperatorOS.</p>
+                    <a href="{{ url_for('submit_task') }}" class="btn btn-primary">
+                        <i data-feather="plus-circle" class="me-2"></i>Submit Task
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-refresh dashboard every 30 seconds
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+    
+    // Initialize real-time updates if available
+    if (typeof initializeRealTimeUpdates !== 'undefined') {
+        initializeRealTimeUpdates();
+    }
+</script>
+{% endblock %}
