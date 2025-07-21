@@ -14,6 +14,7 @@ class User(db.Model):
     # Relationships
     sessions = db.relationship('UserSession', backref='user', lazy=True)
     tasks = db.relationship('TaskRequest', backref='user', lazy=True)
+    threads = db.relationship('AssistantThread', backref='user', lazy=True)
 
 class AgentInstance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -66,6 +67,7 @@ class UserSession(db.Model):
     
     # Relationships
     tasks = db.relationship('TaskRequest', backref='session', lazy=True)
+    threads = db.relationship('AssistantThread', backref='session', lazy=True)
 
 class SystemMetrics(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -80,6 +82,74 @@ class SystemMetrics(db.Model):
     avg_response_time = db.Column(db.Float, default=0.0)
     peak_concurrent_requests = db.Column(db.Integer, default=0)
     api_usage = db.Column(JSON, default=dict)
+
+class AssistantThread(db.Model):
+    """Model to track OpenAI Assistant threads and conversations"""
+    id = db.Column(db.Integer, primary_key=True)
+    thread_id = db.Column(db.String(128), unique=True, nullable=False)  # OpenAI thread ID
+    assistant_id = db.Column(db.String(128), nullable=False)  # OpenAI assistant ID
+    domain = db.Column(db.String(32), nullable=False)  # healthcare, financial, sports, business, general
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_activity = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    message_count = db.Column(db.Integer, default=0)
+    total_tokens = db.Column(db.Integer, default=0)
+    
+    # Foreign keys
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('user_session.id'), nullable=True)
+    
+    # Relationships
+    runs = db.relationship('AssistantRun', backref='thread', lazy=True, cascade='all, delete-orphan')
+
+class AssistantRun(db.Model):
+    """Model to track individual assistant runs"""
+    id = db.Column(db.Integer, primary_key=True)
+    run_id = db.Column(db.String(128), nullable=False)  # OpenAI run ID
+    status = db.Column(db.String(32), nullable=False)  # queued, in_progress, requires_action, cancelling, cancelled, failed, completed, expired
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    failed_at = db.Column(db.DateTime)
+    cancelled_at = db.Column(db.DateTime)
+    expires_at = db.Column(db.DateTime)
+    
+    # Run details
+    model = db.Column(db.String(64))
+    instructions = db.Column(Text)
+    tools = db.Column(JSON, default=list)
+    tool_calls = db.Column(JSON, default=list)
+    usage_tokens = db.Column(db.Integer, default=0)
+    
+    # Error tracking
+    error_code = db.Column(db.String(64))
+    error_message = db.Column(Text)
+    
+    # Foreign key
+    thread_id = db.Column(db.Integer, db.ForeignKey('assistant_thread.id'), nullable=False)
+
+class AssistantConfiguration(db.Model):
+    """Model to store domain-specific assistant configurations"""
+    id = db.Column(db.Integer, primary_key=True)
+    domain = db.Column(db.String(32), unique=True, nullable=False)
+    assistant_id = db.Column(db.String(128), nullable=False)  # OpenAI assistant ID
+    name = db.Column(db.String(128), nullable=False)
+    description = db.Column(Text)
+    instructions = db.Column(Text, nullable=False)
+    model = db.Column(db.String(64), default='gpt-4o')
+    tools = db.Column(JSON, default=list)
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Performance tracking
+    total_runs = db.Column(db.Integer, default=0)
+    successful_runs = db.Column(db.Integer, default=0)
+    failed_runs = db.Column(db.Integer, default=0)
+    avg_response_time = db.Column(db.Float, default=0.0)
+    total_tokens_used = db.Column(db.Integer, default=0)
     user_satisfaction = db.Column(db.Float, default=0.0)
 
 class AgentPool(db.Model):

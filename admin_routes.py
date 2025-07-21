@@ -317,12 +317,12 @@ def admin_logs():
 def admin_api_metrics():
     """API endpoint for real-time metrics"""
     # Get latest system metrics
-    latest_metric = SystemMetrics.query.order_by(
+    latest_metric = db.session.query(SystemMetrics).order_by(
         SystemMetrics.timestamp.desc()
     ).first()
     
     # Get agent statistics
-    agents = AgentInstance.query.all()
+    agents = db.session.query(AgentInstance).all()
     agent_stats = {
         'total': len(agents),
         'active': len([a for a in agents if a.status in ['idle', 'busy']]),
@@ -333,10 +333,10 @@ def admin_api_metrics():
     
     # Get task statistics
     task_stats = {
-        'pending': TaskRequest.query.filter_by(status='pending').count(),
-        'processing': TaskRequest.query.filter_by(status='processing').count(),
-        'completed': TaskRequest.query.filter_by(status='completed').count(),
-        'failed': TaskRequest.query.filter_by(status='failed').count()
+        'pending': db.session.query(TaskRequest).filter_by(status='pending').count(),
+        'processing': db.session.query(TaskRequest).filter_by(status='processing').count(),
+        'completed': db.session.query(TaskRequest).filter_by(status='completed').count(),
+        'failed': db.session.query(TaskRequest).filter_by(status='failed').count()
     }
     
     return jsonify({

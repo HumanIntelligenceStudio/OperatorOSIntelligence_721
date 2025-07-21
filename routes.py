@@ -5,7 +5,7 @@ Main application routes for the OperatorOS web interface
 from flask import render_template, request, redirect, url_for, flash, session, jsonify
 from app import app, db
 from models import TaskRequest, AgentInstance, UserSession, SystemMetrics
-from agent_master_controller import master_controller
+from agent_master_controller import get_master_controller
 import logging
 from datetime import datetime, timedelta
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def index():
     """Main dashboard page"""
     # Get system status
-    system_status = master_controller.get_system_status()
+    system_status = get_master_controller().get_system_status()
     
     # Get recent tasks
     recent_tasks = db.session.query(TaskRequest).order_by(
@@ -108,7 +108,7 @@ def submit_task():
         
         try:
             # Submit task to master controller
-            task_id = master_controller.submit_task(
+            task_id = get_master_controller().submit_task(
                 query=query,
                 priority=priority
             )
@@ -158,9 +158,24 @@ def task_monitor():
     
     # Get tasks with pagination
     page = request.args.get('page', 1, type=int)
-    tasks = query.order_by(TaskRequest.created_at.desc()).paginate(
-        page=page, per_page=20, error_out=False
-    )
+    per_page = 20
+    tasks_list = query.order_by(TaskRequest.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
+    total = query.count()
+    
+    # Create pagination object manually
+    class Pagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
+    
+    tasks = Pagination(tasks_list, page, per_page, total)
     
     return render_template('task_monitor.html', 
                          tasks=tasks,
@@ -186,7 +201,7 @@ def health_check():
         db.session.commit()
         
         # Get system status
-        system_status = master_controller.get_system_status()
+        system_status = get_master_controller().get_system_status()
         
         return jsonify({
             'status': 'healthy',
@@ -264,7 +279,7 @@ def simple_api_submit():
         if not data or 'query' not in data:
             return jsonify({'error': 'Query is required'}), 400
         
-        task_id = master_controller.submit_task(
+        task_id = get_master_controller().submit_task(
             query=data['query'],
             priority=data.get('priority', 5)
         )
@@ -282,7 +297,7 @@ def simple_api_submit():
 @app.route('/api/status/<task_id>')
 def simple_api_task_status(task_id):
     """Simple API endpoint for task status"""
-    task = TaskRequest.query.filter_by(task_id=task_id).first()
+    task = db.session.query(TaskRequest).filter_by(task_id=task_id).first()
     
     if not task:
         return jsonify({'error': 'Task not found'}), 404
@@ -301,7 +316,7 @@ def simple_api_task_status(task_id):
 def initialize_system():
     """Initialize the system on first request"""
     try:
-        master_controller.start()
+        get_master_controller().start()
         logger.info("OperatorOS system initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize system: {e}")

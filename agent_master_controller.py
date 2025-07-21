@@ -19,6 +19,7 @@ import queue
 from app import db
 from models import AgentInstance, TaskRequest, SystemMetrics, UserSession
 from ai_providers import AIProviderManager
+from ai_providers_enhanced import initialize_enhanced_ai_provider, AssistantMode
 from agent_pools import SpecializedAgentPools
 
 # Configure logging
@@ -34,6 +35,7 @@ class AgentMasterController:
         
         # Initialize AI providers and specialized agents
         self.ai_providers = AIProviderManager()
+        self.enhanced_ai_providers = initialize_enhanced_ai_provider()
         self.specialized_pools = SpecializedAgentPools(self.ai_providers)
         
         # Agent management
@@ -564,5 +566,12 @@ class AgentMasterController:
             'is_running': self.running
         }
 
-# Global instance
-master_controller = AgentMasterController()
+# Global instance - initialize in app context
+master_controller = None
+
+def get_master_controller():
+    """Get or initialize the master controller"""
+    global master_controller
+    if master_controller is None:
+        master_controller = AgentMasterController()
+    return master_controller

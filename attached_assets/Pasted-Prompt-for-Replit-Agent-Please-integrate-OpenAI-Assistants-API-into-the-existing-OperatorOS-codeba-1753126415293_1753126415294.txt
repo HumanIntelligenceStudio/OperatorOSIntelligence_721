@@ -1,0 +1,67 @@
+Prompt for Replit Agent:
+"Please integrate OpenAI Assistants API into the existing OperatorOS codebase. Currently, the system uses basic OpenAI Chat Completions API in the ai_providers.py file. I want to enhance it to leverage OpenAI Assistants with the following requirements:
+Current System Context:
+
+OperatorOS is a multi-agent AI orchestration platform with specialized pools (healthcare, financial, sports, business, general)
+Currently uses basic OpenAI Chat Completions API calls
+Has an AIProviderManager class that routes between OpenAI and Anthropic
+Each domain uses different system prompts but no persistent memory or tools
+
+Integration Requirements:
+
+Create Domain-Specific OpenAI Assistants:
+
+Healthcare Assistant with medical knowledge and tools
+Financial Assistant with market analysis capabilities
+Sports Assistant with analytics tools
+Business Assistant with automation tools
+General Assistant for misc queries
+
+
+Enhance AIProviderManager:
+
+Add methods to create/manage OpenAI Assistants
+Add thread management for conversations
+Add assistant run handling with polling
+Keep existing Chat Completions as fallback
+
+
+Add Assistant Tools:
+
+Code interpreter for financial calculations
+File search for document analysis
+Function calling for external API integration (Plaid, Alpha Vantage, etc.)
+
+
+Integration Points:
+
+Modify get_completion() method to optionally use Assistants
+Add session/thread persistence in database
+Add assistant selection logic based on query type
+Maintain backwards compatibility with current system
+
+
+Database Updates:
+
+Add AssistantThread model to track conversations
+Store assistant IDs and thread IDs
+Track assistant usage metrics
+
+
+
+Key Files to Modify:
+
+ai_providers.py (main integration)
+models.py (add new database models)
+agent_master_controller.py (update task routing)
+agent_pools.py (connect to assistants)
+
+Expected Benefits:
+
+Persistent conversation memory
+Better tool integration
+More sophisticated reasoning
+File upload capabilities
+Structured outputs
+
+Please implement this integration while maintaining the existing architecture and ensuring the system can gracefully fall back to Chat Completions if Assistants are unavailable."
